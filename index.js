@@ -150,7 +150,107 @@
         }
         return obj;
     };
+// 实现数组和对象深/浅合并
+    var merge = function merge() {
+        var options,
+            target = arguments[0] || {},
+            i = 1,
+            length = arguments.length,
+            treated = arguments[length - 1],
+            deep = false;
+        if (typeof target === "boolean") {
+            deep = target;
+            target = arguments[i] || {};
+            i++;
+        }
 
+        if (Array.isArray(treated) && treated.treated) {
+            // 传递了记录已经处理过的内容的集合
+            // 后期循环的时候少循环处理一项
+            length--;
+        } else {
+            // 没传递，最后传递的这个值，不是用来存储处理过的内容，而是进行合并比较的
+            treated = [];
+            treated.treated = true;
+        }
+
+        if (typeof target !== "object" && !isFunction(target)) target = {};
+        for (; i < length; i++) {
+            options = arguments[i];
+            if (options == null) continue;
+
+            // 放置死递归处理的操作
+            if (treated.indexOf(options) > -1) return options;
+            treated.push(options);
+
+            each(options, function (copy, name) {
+                var copyIsArray = Array.isArray(copy),
+                    copyIsObject = isPlainObject(copy),
+                    src = target[name],
+                    clone = src;
+                if (deep && copy && (copyIsArray || copyIsObject)) {
+                    if (copyIsArray && !Array.isArray(src)) clone = [];
+                    if (copyIsObject && !isPlainObject(src)) clone = {};
+                    target[name] = merge(deep, clone, copy, treated);
+                } else if (copy !== undefined) {
+                    target[name] = copy;
+                }
+            });
+        }
+        return target;
+    };
+
+    // 实现数组和对象深/浅拷贝
+    var clone = function clone() {
+        var target = arguments[0],
+            deep = false,
+            type,
+            isArray,
+            isObject,
+            result,
+            Ctor,
+            treated = arguments[arguments.length - 1];
+        !Array.isArray(treated) || !treated.treated ? (treated = [], treated.treated = true) : null;
+        if (typeof target === "boolean") {
+            deep = target;
+            target = arguments[1];
+        }
+
+        // 防止死递归的处理
+        if (treated.indexOf(target) > -1) return target;
+        treated.push(target);
+
+        // 校验类型
+        type = toType(target);
+        isArray = Array.isArray(target);
+        isObject = isPlainObject(target);
+
+        // 特殊值的拷贝
+        if (target == null) return target;
+        Ctor = target.constructor;
+        if (/^(regexp|date)$/i.test(type)) return new Ctor(target);
+        if (/^(error)$/i.test(type)) return new Ctor(target.message);
+        if (/^(function|generatorfunction)$/i.test(type)) {
+            return function proxy() {
+                var args = Array.from(arguments);
+                return target.apply(this, args);
+            };
+        }
+        if (!isArray && !isObject) return target;
+
+        // 如果是数组/对象，我们依次迭代赋值给新的数组/对象
+        result = new Ctor();
+        each(target, function (copy, name) {
+            if (deep) {
+                // 深拷贝
+                result[name] = clone(deep, copy, treated);
+                return;
+            }
+            // 浅拷贝
+            result[name] = copy;
+        });
+        return result;
+    };
 
     /* 暴露API */
     var utils = {
@@ -164,6 +264,8 @@
         debounce: debounce,
         throttle: throttle,
         each: each,
+        merge: merge,
+        clone: clone
     };
 
     // 转移_的使用权
