@@ -61,7 +61,66 @@
         return (type === "number" || type === "string") && !isNaN(+obj);
     };
 
+// 函数防抖
+    var debounce = function debounce(func, wait, immediate) {
+        if (typeof func !== "function") throw new TypeError('func must be required and be an function!');
+        if (typeof wait === "boolean") {
+            immediate = wait;
+            wait = 300;
+        }
+        if (typeof wait !== "number") wait = 300;
+        if (typeof immediate !== "boolean") immediate = false;
+        var timer = null,
+            result;
+        return function proxy() {
+            var runNow = !timer && immediate,
+                params = [].slice.call(arguments),
+                self = this;
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(function () {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                };
+                !immediate ? result = func.apply(self, params) : null;
+            }, wait);
+            runNow ? result = func.apply(self, params) : null;
+            return result;
+        };
+    };
 
+    // 函数节流
+    var throttle = function throttle(func, wait) {
+        if (typeof func !== "function") throw new TypeError('func must be required and be an function!');
+        if (typeof wait !== "number") wait = 300;
+        var timer = null,
+            previous = 0,
+            result;
+        return function proxy() {
+            var now = +new Date(),
+                remaining = wait - (now - previous),
+                self = this,
+                params = [].slice.call(arguments);
+            if (remaining <= 0) {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+                result = func.apply(self, params);
+                previous = +new Date();
+            } else if (!timer) {
+                timer = setTimeout(function () {
+                    if (timer) {
+                        clearTimeout(timer);
+                        timer = null;
+                    }
+                    result = func.apply(self, params);
+                    previous = +new Date();
+                }, remaining);
+            }
+            return result;
+        };
+    };
 
 
 
@@ -75,6 +134,8 @@
         isPlainObject: isPlainObject,
         isEmptyObject: isEmptyObject,
         isNumeric: isNumeric,
+        debounce: debounce,
+        throttle: throttle,
     };
 
     // 转移_的使用权
