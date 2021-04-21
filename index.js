@@ -122,7 +122,34 @@
         };
     };
 
-
+// 遍历数组/类数组/对象「支持回调函数返回值处理：返回false则结束循环，这是内置方法forEach/map不具备的」
+    var each = function each(obj, callback) {
+        typeof callback !== "function" ? callback = Function.prototype : null;
+        var length,
+            i = 0,
+            keys = [];
+        if (isArrayLike(obj)) {
+            // 数组或者类数组
+            length = obj.length;
+            for (; i < length; i++) {
+                var item = obj[i],
+                    result = callback.call(item, item, i);
+                if (result === false) break;
+            }
+        } else {
+            // 对象
+            keys = Object.keys(obj);
+            typeof Symbol !== "undefined" ? keys = keys.concat(Object.getOwnPropertySymbols(obj)) : null;
+            i = 0;
+            length = keys.length;
+            for (; i < length; i++) {
+                var key = keys[i],
+                    value = obj[key];
+                if (callback.call(value, value, key) === false) break;
+            }
+        }
+        return obj;
+    };
 
 
     /* 暴露API */
@@ -136,6 +163,7 @@
         isNumeric: isNumeric,
         debounce: debounce,
         throttle: throttle,
+        each: each,
     };
 
     // 转移_的使用权
